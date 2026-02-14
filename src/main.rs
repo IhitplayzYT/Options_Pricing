@@ -1,5 +1,7 @@
-use std::{env, f64::consts::E, io, process::exit};
-use libm::{erf, erfc};
+#![allow(unused_imports,non_snake_case,non_camel_case_types,dead_code)]
+mod Greeks;
+use std::{f64::consts::E, io};
+use libm::{erfc};
 
 fn get_args() -> [f64;5]{
 let mut buff = String::from("");
@@ -19,7 +21,7 @@ buff.clear();
 io::stdin().read_line(& mut buff).expect(msg);
 let vol = buff.trim().parse().expect("Input Volatility\n");
 buff.clear();
-[CMP,SP,T_Exp,rfr,vol]
+return [CMP,SP,T_Exp,rfr,vol];
 }
 
 fn d1(cmp:f64,sp:f64,t_exp:f64,rfr:f64,vol:f64) -> f64{
@@ -36,19 +38,20 @@ fn N(d:f64) -> f64{
 0.5 * erfc(-d/2.0_f64.sqrt())
 }
 
-fn Greek_delta(N_d1:f64) -> (f64,f64){
-(N_d1,(N_d1 - 1.0_f64))
-}
-//fn Greek_gamma() -> (f64,f64){}
-//fn Greek_vega() -> (f64,f64){}
-//fn Greek_theta() -> (f64,f64){}
-//fn Greek_rho() -> (f64,f64){}
+/*
+    CMP -> S
+    rfr -> r
+    t_exp -> T
+    vol -> σ
+    K -> SP
+*/
+
 
 // Greeks returned in order [(Delta),(Gamma),(Vega),(Theta),(Rho)]
 // Each tuple will have 2 elems the 1st is call the 2nd elem will be for put
 fn greeks(cmp:f64,sp:f64,t_exp:f64,rfr:f64,vol:f64,d1:f64,d2:f64,N_d1:f64,N_d2:f64) -> Vec<(f64,f64)> {
 let mut greeks:Vec<(f64,f64)> = Vec::new();
-greeks.push(Greek_delta(N_d1));
+greeks.push(Greeks::Delta(N_d1));
 //greeks.push(Greek_gamma());
 //greeks.push(Greek_vega());
 //greeks.push(Greek_theta());
@@ -62,13 +65,6 @@ return greeks;
 // d2 = d1 - vol * T_exp ^ 0.5
 // Call = CMP * N(d1) - SP * e^(-rfr * T_exp ) * N(d2)
 // Put = SP * e^(-rfr * T_exp ) * N(-d2) - CMP * N(-d1)
-
-// GREEK |  Call  |  Put 
-// Delta | N(d1) | N(d1) - 1
-// Gamma | N'(d1)/(CMP * vol * sqrt(T - t)) ?? 
-// Vega | 
-// Theta |  | 
-// Rho |  | 
 
 fn main(){
 println!("Input CMP,SP,T_exp,rfr and volatility\n");
