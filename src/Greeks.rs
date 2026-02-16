@@ -1,9 +1,7 @@
 #![allow(unused_imports,non_snake_case,non_camel_case_types,dead_code)]
-use libm::{exp, sqrt};
+use core::f64;
 
-pub fn Delta(N_d1:f64) -> (f64,f64){
-(N_d1,(N_d1 - 1.0_f64))
-}
+use libm::{exp, sqrt,erfc,erf};
 
 /*
     CMP -> S
@@ -13,27 +11,44 @@ pub fn Delta(N_d1:f64) -> (f64,f64){
     K -> SP
 */
 
-pub fn Gamma(N_d1:f64,CMP:f64,vol:f64,t_exp:f64) -> f64{
-N_d1 / (CMP * vol * sqrt(t_exp))
+/* 
+    d1 = (ln(CMP/SP) + (rfr + vol ^ 2/2) * T_exp) / vol * T_exp ^ 0.5
+    d2 = d1 - vol * T_exp ^ 0.5
+    Call = CMP * N(d1) - SP * e^(-rfr * T_exp ) * N(d2)
+    Put = SP * e^(-rfr * T_exp ) * N(-d2) - CMP * N(-d1)
+*/
+
+
+pub fn Delta(N_d1:f64) -> (f64,f64){
+(N_d1,(N_d1 - 1.0_f64))
 }
 
-pub fn Vega(N_d1:f64,CMP:f64,t_exp:f64) -> f64{
-(N_d1 * CMP * sqrt(t_exp)) / 100.0
+pub fn phi(x:f64) -> f64{
+    (-x.powi(2)/2.0).exp() / (2.0 * f64::consts::PI).sqrt()
 }
 
-pub fn Theta(N_d1:f64,d2:f64,CMP:f64,SP:f64,vol:f64,rfr:f64,t_exp:f64) -> (f64,f64) {
-let p1 = _theta_p1(N_d1,CMP,vol,t_exp);
-(p1 - (rfr * SP * exp(-1.0 * rfr * t_exp) * libm::erf(d2)),p1 + (rfr * SP * exp(-1.0 * rfr * t_exp) * libm::erfc(d2)))
+
+pub fn Gamma(phi_d1:f64,CMP:f64,vol:f64,t_exp:f64) -> f64{
+phi_d1 / (CMP * vol * sqrt(t_exp))
 }
 
-fn _theta_p1(N_d1:f64,CMP:f64,vol:f64,t_exp:f64) -> f64{
--1.0 * ((CMP * N_d1 * vol) / (2.0 * sqrt(t_exp))) 
+pub fn Vega(phi_d1:f64,CMP:f64,t_exp:f64) -> f64{
+(phi_d1 * CMP * sqrt(t_exp)) / 100.0_f64
 }
 
-pub fn Rho(SP:f64,T:f64,rfr:f64,d2:f64) -> (f64,f64){
+pub fn Theta(phi_d1:f64,N_d2:f64,CMP:f64,SP:f64,vol:f64,rfr:f64,t_exp:f64) -> (f64,f64) {
+let p1 = _theta_p1(phi_d1,CMP,vol,t_exp);
+(p1 - (rfr * SP * exp(-1.0 * rfr * t_exp) * N_d2),p1 + (rfr * SP * exp(-1.0 * rfr * t_exp) * (1.0 - N_d2)))
+}
+
+fn _theta_p1(phi_d1:f64,CMP:f64,vol:f64,t_exp:f64) -> f64{
+-1.0 * ((CMP * phi_d1 * vol) / (2.0 * t_exp.sqrt())) 
+}
+
+pub fn Rho(SP:f64,T:f64,rfr:f64,N_d2:f64) -> (f64,f64){
 (
-SP * T * exp(-1.0 * rfr * T) * libm::erf(d2),
--1.0 * SP * T * exp(-1.0 * rfr * T) * libm::erfc(-d2)
+SP * T * exp(-1.0 * rfr * T) * N_d2,
+-1.0 * SP * T * exp(-1.0 * rfr * T) * (1.0 - N_d2)
 )
 }
 
