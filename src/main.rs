@@ -1,6 +1,6 @@
 #![allow(unused_imports,non_snake_case,non_camel_case_types,dead_code)]
 mod Greeks;
-use std::{f64::consts::E, io};
+use std::{collections::HashMap, f64::consts::E, io};
 use libm::{erfc};
 
 fn get_args() -> [f64;5]{
@@ -46,16 +46,41 @@ fn N(d:f64) -> f64{
     K -> SP
 */
 
+struct s_Greeks{
+delta: (f64,f64),
+gamma: f64,
+vega: f64,
+theta: (f64,f64),
+rho: (f64,f64),
+}
+
+impl s_Greeks {
+fn new(CMP:f64,SP:f64,t_exp:f64,rfr:f64,vol:f64,d1:f64,d2:f64,N_d1:f64,N_d2:f64) -> Self{
+
+Self{
+delta: Greeks::Delta(N_d1),
+gamma: Greeks::Gamma(N_d1,CMP,vol,t_exp),
+vega:  Greeks::Vega(N_d1, CMP, t_exp),
+theta: Greeks::Theta(N_d1, d2, CMP, SP, vol, rfr, t_exp),
+rho: Greeks::Rho(SP, t_exp, rfr, d2)
+}
+}
+
+
+}
+
 
 // Greeks returned in order [(Delta),(Gamma),(Vega),(Theta),(Rho)]
 // Each tuple will have 2 elems the 1st is call the 2nd elem will be for put
-fn greeks(cmp:f64,sp:f64,t_exp:f64,rfr:f64,vol:f64,d1:f64,d2:f64,N_d1:f64,N_d2:f64) -> Vec<(f64,f64)> {
-let mut greeks:Vec<(f64,f64)> = Vec::new();
-greeks.push(Greeks::Delta(N_d1));
-//greeks.push(Greek_gamma());
-//greeks.push(Greek_vega());
-//greeks.push(Greek_theta());
-//greeks.push(Greek_rho());
+fn greeks(CMP:f64,SP:f64,t_exp:f64,rfr:f64,vol:f64,d1:f64,d2:f64,N_d1:f64,N_d2:f64) -> HashMap<String,(f64,f64)> {
+let mut greeks:HashMap<String,(f64,f64)> = HashMap::new();
+greeks.insert("delta".to_string(),Greeks::Delta(N_d1));
+let mut t = Greeks::Gamma(N_d1,CMP,vol,t_exp);
+greeks.insert("gamma".to_string(),(t,t));
+t = Greeks::Vega(N_d1, CMP, t_exp);
+greeks.insert("vega".to_string(),(t,t));
+greeks.insert("theta".to_string(),Greeks::Theta(N_d1, d2, CMP, SP, vol, rfr, t_exp));
+greeks.insert("rho".to_string(),Greeks::Rho(SP, t_exp, rfr, d2));
 return greeks;
 }
 
